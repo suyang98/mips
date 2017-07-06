@@ -250,10 +250,10 @@ void text::tran() {
 	for (int i = 0; i < maxline; ++i) {
 		a = &mem.get_line(i);
 		if (a->four != "") {
-			if (a->sy == "j" || a->sy == "b" || a->sy == "jal") { a->_one = address; a->one = mem.find_label(a->four);a->four = ""; }
-			else if (a->sy == "beqz" || a->sy == "bnez" || a->sy == "blez" || a->sy == "bgez" || a->sy == "bgtz" || a->sy == "bltz")
+			if (a->sy == 26 || a->sy == 40) { a->_one = address; a->one = mem.find_label(a->four);a->four = ""; }
+			else if (a->sy >= 33 && a->sy <=38)
 				{a->_two = address; a->two = mem.find_label(a->four);a->four = "";}
-			else if (a->sy == "beq" || a->sy == "bne" || a->sy == "ble" || a->sy == "bge" || a->sy == "bgt" || a->sy == "blt")
+			else if (a->sy >= 27 && a->sy <=32)
 				{a->_thr = address; a->thr = mem.find_label(a->four);a->four = "";}
 			else { a->_two = address; a->two = mem.find_data(a->four);a->four = ""; }
 		}

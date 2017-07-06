@@ -45,220 +45,276 @@ void run::runn() {
 		if (i >= mem.get_line_num() || !fl) continue;
 		a = mem.get_line(i);
 		++i;
-		if (a.sy == "syscall") {
-			t = new syscall(mem, is, os, reg, *this);
-			t->IF(a);
-		}
-		if (a.sy == "li") {
-			t = new li(mem, is, os, reg);
-			t->IF(a);
-		}
-		if (a.sy == "add") {
+		switch (a.sy) {
+		case 0: {
 			t = new Add(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "addu") {
+		case 1: {
 			t = new Addu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "addiu") {
+		case 2: {
 			t = new Addiu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sub") {
+		case 3: {
 			t = new Sub(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "subu") {
+		case 4: {
 			t = new Subu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mul" && a._thr != empty) {
+		case 5: {
 			t = new Mul(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mulu" && a._thr != empty) {
+		case 6: {
 			t = new Mulu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mul" && a._thr == empty) {
+		case 7: {
 			t = new Mul2(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mulu" && a._thr == empty) {
+		case 8: {
 			t = new Mulu2(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "div" && a._thr != empty) {
+		case 9: {
 			t = new Div(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "divu" && a._thr != empty) {
+		case 10: {
 			t = new Divu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "div" && a._thr == empty) {
+		case 11: {
 			t = new Div2(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "divu" && a._thr == empty) {
+		case 12: {
 			t = new Divu2(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "xor") {
+		case 13: {
 			t = new Xor(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "xoru") {
+		case 14: {
 			t = new Xoru(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "neg") {
+		case 15: {
 			t = new Neg(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "negu") {
+		case 16: {
 			t = new Negu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "rem") {
+		case 17: {
 			t = new Rem(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "remu") {
+		case 18: {
 			t = new Remu(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "seq") {
+		case 19: {
+			t = new li(mem, is, os, reg);
+			t->IF(a);
+			break;
+		}
+		case 20: {
 			t = new Seq(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sge") {
+		case 21: {
 			t = new Sge(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sgt") {
+		case 22: {
 			t = new Sgt(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sle") {
+		case 23: {
 			t = new Sle(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "slt") {
+		case 24: {
 			t = new Slt(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sne") {
+		case 25: {
 			t = new Sne(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "b" || a.sy == "j") {
+		case 26: {
 			t = new J(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "beq") {
+		case 27: {
 			t = new Beq(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bne") {
+		case 28: {
 			t = new Bne(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bge") {
+		case 29: {
 			t = new Bge(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "ble") {
+		case 30: {
 			t = new Ble(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bgt") {
+		case 31: {
 			t = new Bgt(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "blt") {
+		case 32: {
 			t = new Blt(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "beqz") {
+		case 33: {
 			t = new Beqz(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bnez") {
+		case 34: {
 			t = new Bnez(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "blez") {
+		case 35: {
 			t = new Blez(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bgez") {
+		case 36: {
 			t = new Bgez(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bgtz") {
+		case 37: {
 			t = new Bgtz(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "bltz") {
+		case 38: {
 			t = new Bltz(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "jr") {
+		case 39: {
 			t = new Jr(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "jal") {
+		case 40: {
 			t = new Jal(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "jalr") {
+		case 41: {
 			t = new Jalr(mem, is, os, reg, *this, i);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "la") {
+		case 42: {
 			t = new La(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "lb") {
+		case 43: {
 			t = new Lb(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "lh") {
+		case 44: {
 			t = new Lh(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "lw") {
+		case 45: {
 			t = new Lw(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sb") {
+		case 46: {
 			t = new Sb(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sh") {
+		case 47: {
 			t = new Sh(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "sw") {
+		case 48: {
 			t = new Sw(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "move") {
+		case 49: {
 			t = new Move(mem, is, os, reg);
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mfhi") {
+		case 50: {
 			t = new Move(mem, is, os, reg);
 			a.two = 33; a._two = address;
 			t->IF(a);
+			break;
 		}
-		if (a.sy == "mflo") {
+		case 51: {
 			t = new Move(mem, is, os, reg);
 			a.two = 32; a._two = address;
 			t->IF(a);
+			break;
 		}
+		case 52: {
+			t = new syscall(mem, is, os, reg, *this);
+			t->IF(a);
+			break;
+		}
+		}
+
 		v1.push(t);
 	}
 }
