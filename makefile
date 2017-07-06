@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -std=c++11 -O2
 
 ################!! MODIFY HERE !!####################
-_OBJ = mips++.o run.o text.o
+_OBJ = mips++.o run.o text.o memory.o
 _DEPS = memory.h registers.h run.h text.h
 #####################################################
 
