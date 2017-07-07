@@ -34,6 +34,7 @@ public:
 	int ret, i;
 	run(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		mem(_mem), is(_is), os(_os), reg(_reg), f(true), fl(true), ret(0) {}
+	~run(){ for (int i = 0; i < xx.size(); ++i) delete xx[i]; }
 	void runn();
 };
 
