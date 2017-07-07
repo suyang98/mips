@@ -12,6 +12,7 @@ using std::string;
 using std::cout;
 using std::endl;
 
+
 enum type { address, number, empty, add };
 struct symbol {
 	string four;
@@ -28,7 +29,7 @@ private:
 public:
 	memory() { linenum = 0; datanum = 0; store = new char[4 * 1024 * 1024]; }
 	~memory() { delete[] store; }
-	void add_text(string s, int a, int b, int c, string d, type _a, type _b, type _c);
+	void add_text(int czi, int a, int b, int c, string d, type _a, type _b, type _c);
 	void add_label(string s) { label[s] = linenum; }
 	void add_data(char c) { store[datanum] = c;datanum++; }
 	void add_var(string s) { da[s] = datanum; }
@@ -42,5 +43,4 @@ public:
 	void align(int k);
 	void sp(int n) { for (int i = 0; i < n; ++i) store[datanum++] = '\0'; }
 	//void print();
-	int bianhao(string s, type ty);
 };

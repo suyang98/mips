@@ -5,25 +5,33 @@
 #include <fstream>
 #include <string>
 #include <queue>
+#include <vector>
 #include "memory.h"
 #include "registers.h"
 using std::istream;
 using std::ostream;
 using std::string;
 using std::queue;
+using std::vector;
+using std::cerr;
 
+struct symbol;
 class base;
 class run {
+public:
+	int correct = 0, tot = 0;
 private:
+	friend class text;
 	symbol a;
 	memory &mem;
 	istream &is;
 	ostream &os;
 	registers &reg;
+	vector<base*> xx;
 	queue<base*> v1, v2, v3, v4;
 public:
 	bool f, fl;
-	int ret;
+	int ret, i;
 	run(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		mem(_mem), is(_is), os(_os), reg(_reg), f(true), fl(true), ret(0) {}
 	void runn();
@@ -39,7 +47,7 @@ protected:
 public:
 	base(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		mem(_mem), is(_is), os(_os), reg(_reg) {}
-	virtual void IF(symbol b) { 
+	virtual void IF(symbol b) {
 		a = b;
 		//cout << a.sy << ' ' << a.one << ' ' << a._one << ' ' << a.two << ' ' << a._two << ' ' << a.thr << ' ' << a._thr << endl; 
 	}
@@ -47,6 +55,7 @@ public:
 	virtual void EX() = 0;
 	virtual void MA() = 0;
 	virtual void WB() = 0;
+	int get_cz() { return a.sy; }
 };
 
 class li :public base {
@@ -75,9 +84,9 @@ public:
 	}
 	virtual void EX() = 0;
 	void MA() {}
-	void WB() { 
-		reg.storage[a.one] = tmp; 
-		reg.used[a.one] = false; 
+	void WB() {
+		reg.storage[a.one] = tmp;
+		reg.used[a.one] = false;
 	}
 };
 class Add :public base_sign {
@@ -89,7 +98,7 @@ class Sub :public base_sign {
 public:
 	Sub(memory &_mem, istream &_is, ostream &_os, registers &_reg) : base_sign(_mem, _is, _os, _reg) {}
 	void EX() {
-		tmp = num1 - num2; 
+		tmp = num1 - num2;
 	}
 };
 class Mul :public base_sign {
@@ -173,7 +182,7 @@ public:
 	bool ID() {
 		if (reg.used[a.one] || (a._two == 0 && reg.used[a.two])) return false;
 		num1 = reg.storage[a.one];
-		if (a._two == 0) num2 = reg.storage[a.two]; 
+		if (a._two == 0) num2 = reg.storage[a.two];
 		else num2 = a.two;
 		reg.used[32] = true; reg.used[33] = true;return true;
 	}
@@ -243,13 +252,13 @@ public:
 		reg.used[a.one] = true;
 		return true;
 	}
-	void EX() { 
-		tmp = -tmp; 
+	void EX() {
+		tmp = -tmp;
 	}
 	void MA() {}
-	void WB() { 
-		reg.storage[a.one] = tmp; 
-		reg.used[a.one] = false; 
+	void WB() {
+		reg.storage[a.one] = tmp;
+		reg.used[a.one] = false;
 	}
 };
 class Negu :public base {
@@ -306,9 +315,9 @@ public:
 class Slt :public com {
 public:
 	Slt(memory &_mem, istream &_is, ostream &_os, registers &_reg) : com(_mem, _is, _os, _reg) {}
-	void EX() { 
+	void EX() {
 		if (num1 < num2) tmp = 1;
-		else tmp = 0; 
+		else tmp = 0;
 	}
 };
 class Sne :public com {
@@ -319,169 +328,251 @@ public:
 
 class J :public base {
 protected:
-	int &i, t;
 	run &r;
-	string s;
 public:
-	J(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		base(_mem, _is, _os, _reg), r(_r), i(_i) {}
+	J(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		base(_mem, _is, _os, _reg), r(_r) {}
+	void IF(symbol b) { a = b; r.i = a.one; }
+	virtual bool ID() { return true; }
+	void EX() {}
+	void MA() {}
+	virtual void WB() {}
+};
+class Jal :public J {
+public:
+	Jal(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		J(_mem, _is, _os, _reg, _r) {}
+	bool ID() {
+		reg.used[31] = true;
+		r.i = a.one;
+		return true;
+	}
+	void WB() {
+		reg.storage[31] = a.i + 1;
+		reg.used[31] = false;
+	}
+};
+class Jr :public base {
+protected:
+	run &r;
+public:
+	Jr(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		base(_mem, _is, _os, _reg), r(_r) {}
 	void IF(symbol b) {
-		a = b; r.fl = false;
+		a = b;r.fl = false;
 		//cout << a.sy << ' ' << a.one << ' ' << a._one << ' ' << a.two << ' ' << a._two << ' ' << a.thr << ' ' << a._thr << endl;
 	}
 	virtual bool ID() {
-		t = a.one;
+		if (reg.used[a.one]) return false;
+		r.i = reg.storage[a.one];return true;
+	}
+	void EX() {}
+	void MA() {}
+	virtual void WB() {}
+};
+class Jalr :public Jr {
+public:
+	Jalr(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Jr(_mem, _is, _os, _reg, _r) {}
+	bool ID() {
+		if (reg.used[a.one]) return false;
+		r.i = reg.storage[a.one];
+		reg.used[31] = true;
 		return true;
 	}
-	virtual void EX() {}
-	void MA() {}
-	virtual void WB() { i = t; r.fl = true; }
+	void WB() {
+		reg.storage[31] = a.i + 1;
+		reg.used[31] = false;
+	}
 };
-class Beq :public J {
+
+class Beq :public base {
+protected:
+	int pd = 1;
+	int num1, num2, ii;
+	run &r;
+	bool tmp, flag;
 public:
-	int num1, num2;
-	bool tmp;
-	Beq(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		J(_mem, _is, _os, _reg, _r, _i), tmp(false) {}
+	Beq(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		base(_mem, _is, _os, _reg), r(_r){}
 	bool ID() {
 		if (reg.used[a.one] || (a._two == 0 && reg.used[a.two])) return false;
 		num1 = reg.storage[a.one];
 		if (a._two == 0) num2 = reg.storage[a.two];
 		else num2 = a.two;
-		t = a.thr;
+		if (pd > 0) { ii = a.i + 1; r.i = a.thr;flag = true; }
+		else { flag = false; ii = a.thr; }
+		r.tot++;
 		return true;
 	}
-	virtual void EX() { if (num1 == num2) tmp = true;else tmp = false; }
-	void WB() 
-	{
-		if (tmp) i = t; r.fl = true; 
+	virtual void EX() {
+		if (num1 == num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
 	}
+	void MA() {}
+	void WB() {}
 };
 class Bne :public Beq {
 public:
-	Bne(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beq(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num1 != num2)tmp = true;else tmp = false; }
+	Bne(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beq(_mem, _is, _os, _reg , _r){}
+	void EX() {
+		if (num1 != num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Bge :public Beq {
 public:
-	Bge(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beq(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { 
-		if (num1 >= num2)tmp = true;
-		else tmp = false; 
+	Bge(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beq(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num1 >= num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
 	}
 };
 class Ble :public Beq {
 public:
-	Ble(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beq(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num1 <= num2)tmp = true;else tmp = false; }
+	Ble(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beq(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num1 <= num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Bgt :public Beq {
 public:
-	Bgt(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beq(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { 
-		if (num1 > num2)tmp = true;else tmp = false;
+	Bgt(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beq(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num1 > num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
 	}
 };
-class Blt :public Beq {
+class Blt :public Beq{
 public:
-	Blt(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beq(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num1 < num2)tmp = true;else tmp = false; }
+	Blt(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beq(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num1 < num2) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Beqz :public base {
 protected:
-	int num, &i; bool tmp;
-	run &r; string s;
+	int pd = 1;
+	int num, ii;
+	bool tmp, flag;
+	run &r;
 public:
-	Beqz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		base(_mem, _is, _os, _reg), r(_r), i(_i) {}
-	void IF(symbol b) {
-		a = b;r.fl = false;
-		//cout << a.sy << ' ' << a.one << ' ' << a._one << ' ' << a.two << ' ' << a._two << ' ' << a.thr << ' ' << a._thr << endl;
-	}
+	Beqz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		base(_mem, _is, _os, _reg), r(_r) {}
 	bool ID() {
 		if (reg.used[a.one]) return false;
-		num = reg.storage[a.one];return true;
+		num = reg.storage[a.one];
+		if (pd > 0) { ii = a.i + 1; r.i = a.two;flag = true; }
+		else { flag = false; ii = a.two; }
+		r.tot++;
+		return true;
 	}
-	virtual void EX() { if (num == 0)tmp = true; else tmp = false; }
+	virtual void EX() {
+		if (num == 0)tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 	void MA() {}
-	void WB() { 
-		if (tmp) i = a.two;
-		r.fl = true; 
-	}
+	void WB() {}
 };
 class Bnez :public Beqz {
 public:
-	Bnez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beqz(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num != 0)tmp = true; else tmp = false; }
+	Bnez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beqz(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num != 0) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Blez :public Beqz {
 public:
-	Blez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beqz(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num <= 0)tmp = true; else tmp = false; }
+	Blez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beqz(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num <= 0) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Bgez :public Beqz {
 public:
-	Bgez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beqz(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { 
-		if (num >= 0)tmp = true; 
-		else tmp = false; 
+	Bgez(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beqz(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num >= 0) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
 	}
 };
-class Bgtz :public Beqz {
+class Bgtz :public Beqz {;
 public:
-	Bgtz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beqz(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num > 0)tmp = true; else tmp = false; }
+	Bgtz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beqz(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num > 0) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
+	}
 };
 class Bltz :public Beqz {
 public:
-	Bltz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Beqz(_mem, _is, _os, _reg, _r, _i) {}
-	void EX() { if (num < 0)tmp = true; else tmp = false; }
-};
-class Jal :public J {
-public:
-	Jal(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		J(_mem, _is, _os, _reg, _r, _i) {}
-	bool ID() { reg.used[31] = true; t = a.one; return true; }
-	void WB() { reg.storage[31] = a.i + 1;i = t; r.fl = true;reg.used[31] = false; }
-};
-class Jr :public base {
-protected:
-	int &i, t;
-	run &r;
-public:
-	Jr(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		base(_mem, _is, _os, _reg), r(_r), i(_i) {}
-	void IF(symbol b) {
-		a = b;r.fl = false;
-		//cout << a.sy << ' ' << a.one << ' ' << a._one << ' ' << a.two << ' ' << a._two << ' ' << a.thr << ' ' << a._thr << endl;
+	Bltz(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r) :
+		Beqz(_mem, _is, _os, _reg, _r) {}
+	void EX() {
+		if (num < 0) tmp = true;
+		else tmp = false;
+		if (tmp != flag) { r.i = ii;r.fl = false; }
+		else r.correct++;
+		if (tmp && pd < 2) pd++;
+		if (!tmp && pd > -1) pd--;
 	}
-	virtual bool ID() {
-		if (reg.used[a.one]) return false;
-		t = reg.storage[a.one];return true;
-	}
-	void EX() {}
-	void MA() {}
-	virtual void WB() { i = t;r.fl = true; }
-};
-class Jalr :public Jr {
-public:
-	Jalr(memory &_mem, istream &_is, ostream &_os, registers &_reg, run &_r, int &_i) :
-		Jr(_mem, _is, _os, _reg, _r, _i) {}
-	bool ID() {
-		if (reg.used[a.one]) return false;
-		t = reg.storage[a.one];reg.used[31] = true;return true;
-	}
-	void WB() { i = reg.storage[31] = t; r.fl = true; reg.used[31] = false; }
 };
 
 class La :public base {
@@ -502,13 +593,13 @@ protected:
 public:
 	L(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		base(_mem, _is, _os, _reg), num(0) {}
-	bool ID() { 
+	bool ID() {
 		if (a._thr == 2) tmp = a.two;
 		else {
-			if(reg.used[a.two]) return false;
+			if (reg.used[a.two]) return false;
 			tmp = reg.storage[a.two] + a.thr;
 		}
-		reg.used[a.one] = true;return true; 
+		reg.used[a.one] = true;return true;
 	}
 	void EX() {}
 	void MA() {
@@ -527,9 +618,9 @@ class Lh :public L {
 public:
 	Lh(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		L(_mem, _is, _os, _reg) {}
-	void WB() { 
+	void WB() {
 		num = (t3 << 8 & 0xff00) | t4 & 0xff;
-		reg.storage[a.one] = num; reg.used[a.one] = false; 
+		reg.storage[a.one] = num; reg.used[a.one] = false;
 	}
 };
 class Lw :public L {
@@ -572,16 +663,16 @@ class Sb :public S {
 public:
 	Sb(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		S(_mem, _is, _os, _reg) {}
-	void MA() { 
-		mem.change_data(tmp, t1); 
+	void MA() {
+		mem.change_data(tmp, t1);
 	}
 };
 class Sh :public S {
 public:
 	Sh(memory &_mem, istream &_is, ostream &_os, registers &_reg) :
 		S(_mem, _is, _os, _reg) {}
-	void MA() { 
-		mem.change_data(tmp++, t1);mem.change_data(tmp, t2); 
+	void MA() {
+		mem.change_data(tmp++, t1);mem.change_data(tmp, t2);
 	}
 };
 class Sw :public S {
@@ -620,11 +711,12 @@ public:
 	bool ID() {
 		if (reg.used[2]) return false;
 		num = reg.storage[2];
-		if (num == 1) { 
-			if (reg.used[4]) return false; 
-			else tmp = reg.storage[4]; 
+		if (num == 1) {
+			if (reg.used[4]) return false;
+			else tmp = reg.storage[4];
 		}
 		if (num == 4) {
+			s = "";
 			if (reg.used[4]) return false;
 			else {
 				int i = reg.storage[4];
@@ -632,7 +724,7 @@ public:
 			}
 		}
 		if (num == 5) reg.used[2] = true;
-		if (num == 8) { 
+		if (num == 8) {
 			if (reg.used[4] || reg.used[5]) return false;
 			beg = reg.storage[4]; len = reg.storage[5];
 		}
@@ -642,7 +734,7 @@ public:
 	void EX() {
 		if (num == 1)
 			os << tmp;
-		if (num == 4) 
+		if (num == 4)
 			os << s;
 		if (num == 5) { is >> tmp; }
 		if (num == 8) { is >> s; }
@@ -650,8 +742,8 @@ public:
 	}
 	void MA() {
 		if (num == 8) {
-			for (int i = beg;s[i-beg]!='\0' && (i-beg+1)<len; ++i)
-			 mem.change_data(i,s[i-beg]); 
+			for (int i = beg;s[i - beg] != '\0' && (i - beg + 1) < len; ++i)
+				mem.change_data(i, s[i - beg]);
 		}
 		if (num == 9) { mem.sp(tmp); }
 	}
